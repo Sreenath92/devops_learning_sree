@@ -1,0 +1,23 @@
+{
+  "name": "devops-learning-app-sreenath92",
+  "version": "1.0.0",
+  "description": "Sample web application for DevOps learning by Sreenath92",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo 'Tests will be implemented in CI/CD phase' && exit 0"
+  },
+  "keywords": ["devops", "docker", "nodejs", "learning", "sreenath92"],
+  "author": "Sreenath92",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

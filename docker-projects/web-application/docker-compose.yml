@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  devops-learning-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: devops-learning-app-sreenath92
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - devops-network
+    labels:
+      - "com.sreenath92.service=devops-learning"
+      - "com.sreenath92.version=1.0.0"
+
+networks:
+  devops-network:
+    driver: bridge
+    labels:
+      - "com.sreenath92.network=devops-learning"
