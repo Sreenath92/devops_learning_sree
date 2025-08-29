@@ -3,26 +3,22 @@ pipeline {
     
     environment {
         DOCKER_IMAGE = 'sreenath92/devops-learning-app'
-        DOCKER_TAG = "${BUILD_NUMBER}"
-        APP_NAME = 'devops-learning-app-sreenath92'
+        APP_NAME = 'devops-learning-app'
     }
     
     stages {
         stage('Checkout') {
             steps {
-                echo '📥 Checking out source code...'
-                git branch: 'main', 
-                    url: 'https://github.com/Sreenath92/devops_learning_sree.git'
+                echo 'Code checked out automatically'
             }
         }
         
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                echo '🔨 Building Docker image...'
-                dir('docker-projects/web-application') {
-                    script {
-                        dockerImage = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
-                        docker.build("${DOCKER_IMAGE}:latest")
+                script {
+                    dir('docker-projects/web-application') {
+                        sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+                        sh 'docker build -t ${DOCKER_IMAGE}:latest .'
                     }
                 }
             }
@@ -30,78 +26,36 @@ pipeline {
         
         stage('Test') {
             steps {
-                echo '🧪 Running tests...'
-                dir('docker-projects/web-application') {
+                script {
+                    sh 'docker run --rm ${DOCKER_IMAGE}:${BUILD_NUMBER} npm test'
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    // Stop existing container
+                    sh 'docker stop ${APP_NAME} || true'
+                    sh 'docker rm ${APP_NAME} || true'
+                    
+                    // Run new container
                     sh '''
-                        # Install dependencies and run tests
-                        npm install
-                        npm test
-                        
-                        # Docker image tests
-                        docker run --rm ${DOCKER_IMAGE}:${DOCKER_TAG} npm test
+                        docker run -d \
+                            --name ${APP_NAME} \
+                            -p 3000:3000 \
+                            --restart unless-stopped \
+                            ${DOCKER_IMAGE}:${BUILD_NUMBER}
                     '''
-                }
-            }
-        }
-        
-        stage('Security Scan') {
-            steps {
-                echo '🔒 Running security scans...'
-                script {
-                    // Scan Docker image for vulnerabilities
-                    sh "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                }
-            }
-        }
-        
-        stage('Deploy to Staging') {
-            steps {
-                echo '🚀 Deploying to staging environment...'
-                script {
-                    sh """
-                        # Stop existing container
-                        docker stop ${APP_NAME}-staging || true
-                        docker rm ${APP_NAME}-staging || true
-                        
-                        # Deploy new version
-                        docker run -d \\
-                            --name ${APP_NAME}-staging \\
-                            -p 3001:3000 \\
-                            -e NODE_ENV=staging \\
-                            ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    """
                 }
             }
         }
         
         stage('Health Check') {
             steps {
-                echo '🔍 Performing health check...'
                 script {
-                    // Wait for application to start
-                    sh 'sleep 30'
-                    
-                    // Health check
-                    def healthCheck = sh(
-                        script: 'curl -f http://localhost:3001/api/health',
-                        returnStatus: true
-                    )
-                    
-                    if (healthCheck != 0) {
-                        error('Health check failed!')
-                    }
-                }
-            }
-        }
-        
-        stage('Deploy to Production') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo '🌐 Deploying to production...'
-                script {
-                    sh './automation-scripts/deployment/deploy.sh production ${DOCKER_TAG}'
+                    sleep(time: 30, unit: 'SECONDS')
+                    sh 'curl -f http://localhost:3000/api/health || exit 1'
                 }
             }
         }
@@ -109,20 +63,10 @@ pipeline {
     
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
-            // Send success notification
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed!'
-            // Send failure notification
-        }
-        always {
-            echo '🧹 Cleaning up...'
-            // Clean up temporary resources
-            sh '''
-                docker system prune -f
-                docker image prune -f
-            '''
+            echo 'Pipeline failed!'
         }
     }
 }
