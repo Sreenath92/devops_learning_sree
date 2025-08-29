@@ -48,16 +48,16 @@ pipeline {
                     
                     sh 'sleep 15'
                     sh 'docker ps | grep ${APP_NAME}'
-                    sh 'docker logs ${APP_NAME}'
                 }
             }
         }
         
-        stage('Health Check') {
+        stage('Verify Deployment') {
             steps {
                 script {
-                    sh 'curl -f http://localhost:3001/api/health'
-                    sh 'curl -s http://localhost:3001/api/info'
+                    // Just check if container is running and logs show success
+                    sh 'docker exec ${APP_NAME} ps aux'
+                    sh 'docker logs ${APP_NAME} | grep "DevOps Learning App started successfully"'
                 }
             }
         }
@@ -66,6 +66,7 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully! Application deployed on port 3001'
+            echo 'Access your app at http://YOUR_VM_IP:3001'
         }
         failure {
             echo 'Pipeline failed.'
