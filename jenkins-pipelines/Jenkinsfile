@@ -17,8 +17,8 @@ pipeline {
             steps {
                 script {
                     dir('docker-projects/web-application') {
-                        sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
-                        sh 'docker build -t ${DOCKER_IMAGE}:latest .'
+                        sh 'docker build -f Dockerfile.minimal -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+                        sh 'docker build -f Dockerfile.minimal -t ${DOCKER_IMAGE}:latest .'
                     }
                 }
             }
@@ -45,6 +45,10 @@ pipeline {
                             --restart unless-stopped \
                             ${DOCKER_IMAGE}:${BUILD_NUMBER}
                     '''
+                    
+                    sh 'sleep 15'
+                    sh 'docker ps | grep ${APP_NAME}'
+                    sh 'docker logs ${APP_NAME}'
                 }
             }
         }
@@ -52,8 +56,8 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
-                    sleep(time: 30, unit: 'SECONDS')
                     sh 'curl -f http://localhost:3001/api/health'
+                    sh 'curl -s http://localhost:3001/api/info'
                 }
             }
         }
@@ -61,10 +65,11 @@ pipeline {
     
     post {
         success {
-            echo 'Pipeline completed successfully! Application deployed.'
+            echo 'Pipeline completed successfully! Application deployed on port 3001'
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            echo 'Pipeline failed.'
+            sh 'docker logs ${APP_NAME} || true'
         }
     }
 }
