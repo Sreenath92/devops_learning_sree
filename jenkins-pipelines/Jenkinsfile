@@ -35,11 +35,9 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 script {
-                    // Stop existing container
                     sh 'docker stop ${APP_NAME} || true'
                     sh 'docker rm ${APP_NAME} || true'
                     
-                    // Run new container
                     sh '''
                         docker run -d \
                             --name ${APP_NAME} \
@@ -56,15 +54,6 @@ pipeline {
                 script {
                     sleep(time: 30, unit: 'SECONDS')
                     sh 'curl -f http://localhost:3001/api/health'
-                }
-            }
-        }
-        
-        stage('Cleanup') {
-            steps {
-                script {
-                    // Remove old images except latest 3 builds
-                    sh 'docker image prune -f'
                 }
             }
         }
