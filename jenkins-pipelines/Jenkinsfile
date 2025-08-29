@@ -1,72 +1,13 @@
 pipeline {
     agent any
     
-    environment {
-        DOCKER_IMAGE = 'sreenath92/devops-learning-app'
-        APP_NAME = 'devops-learning-app'
-    }
-    
     stages {
-        stage('Checkout') {
+        stage('Test Docker') {
             steps {
-                echo 'Code checked out automatically'
+                sh 'docker --version'
+                sh 'docker ps'
+                sh 'whoami'
             }
-        }
-        
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    dir('docker-projects/web-application') {
-                        sh 'docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
-                        sh 'docker build -t ${DOCKER_IMAGE}:latest .'
-                    }
-                }
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                script {
-                    sh 'docker run --rm ${DOCKER_IMAGE}:${BUILD_NUMBER} npm test'
-                }
-            }
-        }
-        
-        stage('Deploy') {
-            steps {
-                script {
-                    // Stop existing container
-                    sh 'docker stop ${APP_NAME} || true'
-                    sh 'docker rm ${APP_NAME} || true'
-                    
-                    // Run new container
-                    sh '''
-                        docker run -d \
-                            --name ${APP_NAME} \
-                            -p 3000:3000 \
-                            --restart unless-stopped \
-                            ${DOCKER_IMAGE}:${BUILD_NUMBER}
-                    '''
-                }
-            }
-        }
-        
-        stage('Health Check') {
-            steps {
-                script {
-                    sleep(time: 30, unit: 'SECONDS')
-                    sh 'curl -f http://localhost:3000/api/health || exit 1'
-                }
-            }
-        }
-    }
-    
-    post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
         }
     }
 }

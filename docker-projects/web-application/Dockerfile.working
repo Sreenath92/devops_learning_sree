@@ -1,0 +1,22 @@
+FROM node:18-alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Copy package files first
+COPY package*.json ./
+
+# Install dependencies with verbose output
+RUN npm install --verbose
+
+# Copy application code
+COPY . .
+
+# Verify installation
+RUN npm list express || (echo "Express not found!" && exit 1)
+
+EXPOSE 3000
+
+CMD ["node", "app.js"]
